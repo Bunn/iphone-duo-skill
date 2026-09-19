@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILL_PATH = Path("skills/iphone-duo")
 REFERENCES = (
     "references/iPhone-Duo-Developer-Guide.md",
+    "references/working-with-xcode-skills.md",
     "references/iphone-duo-research/layout-api-notes.md",
     "references/iphone-duo-research/camera-notes.md",
     "references/iphone-duo-research/ux-videos-notes.md",

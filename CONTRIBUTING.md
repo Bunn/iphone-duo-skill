@@ -12,6 +12,8 @@ Corrections backed by current Apple documentation, SDK declarations, and reprodu
 
 Summarize sources in your own words and link to Apple. Do not add full transcripts, scraped documentation archives, proprietary SDK headers, signing material, or personal machine paths.
 
+When refreshing the [Xcode skills comparison](skills/iphone-duo/references/working-with-xcode-skills.md), export into a new directory with a command-local `DEVELOPER_DIR` and record the date and exact Xcode build. Recheck the selected skills, source disagreements, and relevant SDK probes before changing the dated comparison. Keep the Duo skill standalone and preserve existing personal installations during validation. Summarize and link evidence; do not redistribute Apple's exported skill files in this repository.
+
 ## Validate the package
 
 From the repository root:

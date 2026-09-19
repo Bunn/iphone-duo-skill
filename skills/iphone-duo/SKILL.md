@@ -26,8 +26,15 @@ Start with [the developer guide](references/iPhone-Duo-Developer-Guide.md), sect
 | Multiple scenes and display transitions | 8 | Guide's linked scene documentation |
 | Camera direction, rotation, subject display | 9 | [Camera API notes](references/iphone-duo-research/camera-notes.md) |
 | Release readiness or source verification | 11–14 and appendix | Current linked release notes and API pages |
+| Work with Xcode's exported skills or diagnose SDK migration errors | 2–4, 10–12 | [Working with Xcode skills](references/working-with-xcode-skills.md) |
 
 The consolidated guide is the starting synthesis; supporting notes supply detail. Check current sources when resolving differences instead of silently choosing the convenient claim. Do not load the whole reference archive for a small, unrelated edit.
+
+## Work alongside Xcode skills when available
+
+This skill remains usable on its own. If the task benefits from Xcode's installed or exported skills, read the relevant companion guidance: `app-resizability` for legacy UIKit geometry and scene migration, `swiftui-whats-new-27` for SwiftUI compiler migrations and supporting toolbar APIs, and `swiftui-specialist` for state and view identity. Load only the relevant entrypoint and references. The companion reference explains discovery, export, and known source discrepancies.
+
+Keep one task-scoped change plan across skills. An Apple modernization checklist does not expand a focused feature request into an app-wide rewrite, require changes to valid code, or override the app's minimum deployment target. Retain this guide's Duo-specific layout, hinge, camera and validation requirements. Resolve conflicting claims using current public SDK declarations, official references and appropriate reproduction evidence; neither skill is an unconditional authority. Use `device-interaction` only when its actual Xcode tools are available, and distinguish general UI checks from Duo hardware validation.
 
 ## Verify the new APIs and the actual toolchain
 
@@ -35,7 +42,7 @@ The consolidated guide is the starting synthesis; supporting notes supply detail
 - If a symbol is missing, first check the selected developer directory, SDK version, import and destination/platform. A failure under Xcode 26.1 does not prove a 27.1 API is nonexistent. Do not invent a similarly named method.
 - Select the Duo-capable Xcode installation available in the current environment. Set `DUO_XCODE_DIR` to its `Contents/Developer` directory, or use `xcode-select -p` to inspect the currently selected directory. Verify `xcodebuild -version` and `xcrun --sdk iphonesimulator --show-sdk-path` with a command-local `DEVELOPER_DIR`; avoid changing global Xcode selection. The guide includes portable command examples.
 - Keep the existing deployment target unless the task calls for changing it. Use symbol-specific availability checks and older-OS fallback behavior. Compile shared Catalyst code for that target separately; runtime guards alone may not resolve unavailable SDK declarations.
-- For implementation, typecheck/build the affected code with the intended SDK. If the SDK is unavailable, continue useful source-based work and state what remains uncompiled; do not substitute guessed APIs or report runtime validation.
+- For implementation, build the affected app target with the intended SDK. Standalone typechecks are useful for declaration probes but can miss later compiler diagnostics, including the audited SDK 27 state-initialization issue. If the SDK or build environment is unavailable, continue useful source-based work and state what remains uncompiled; do not substitute guessed APIs or report runtime validation.
 
 ## Preserve these Duo-specific invariants
 
