@@ -40,6 +40,57 @@ For a manual Codex installation, download or clone this repository and copy `ski
 
 Installing the skill requires no Xcode, account credentials, MCP server, or background service. Building and testing an iOS app requires a suitable Apple development environment.
 
+## Use with Xcode's skills (optional)
+
+`iphone-duo` works on its own. Xcode's bundled Apple-authored skills can add layout modernization, SwiftUI migration, and UI testing guidance. This comparison covers the export inspected from **Xcode 27.1 (27A9269) on 19 September 2026**; recheck the contents of other builds.
+
+| Skill | Coverage in the inspected material | Use alongside `iphone-duo` |
+| --- | --- | --- |
+| This repository's `iphone-duo` | Duo-specific reserved regions, arrangement containers, vertical bars, hinge input, cameras, availability, and validation | Coordinates Duo feature work and identifies checks that need hardware |
+| Apple's `app-resizability` | Explicit Duo preparation through local geometry, orientation, scene lifecycle, safe areas, and idiom modernization | Audit relevant layout assumptions and configuration before adding Duo features |
+| Apple's `swiftui-whats-new-27` | General SDK 27 SwiftUI changes, including toolbars, state macros, and result builders | Investigate affected APIs and compiler migration errors |
+| Apple's `swiftui-specialist` | SwiftUI identity, state, composition, localization, and performance | Preserve state and sound view structure as layouts adapt |
+| Apple's `device-interaction` | Device/simulator screenshots, UI hierarchy, touch, and orientation checks through Xcode's tools | Verify ordinary UI behavior when those tools are available |
+
+The inspected Apple export does not cover the Duo reserved-region, arrangement, hinge, or camera APIs described here. Its device-interaction guidance does not establish folding, inner/outer display transitions, or simultaneous camera-display behavior. The [working-together guide](skills/iphone-duo/references/working-with-xcode-skills.md) explains task selection, verification, and known source disagreements.
+
+### Export from your Xcode installation
+
+Set `DUO_XCODE_DIR` to the selected Xcode's `Contents/Developer` directory, then check its version before exporting:
+
+```sh
+DUO_XCODE_DIR="/Applications/Xcode.app/Contents/Developer"
+DEVELOPER_DIR="$DUO_XCODE_DIR" xcodebuild -version
+DEVELOPER_DIR="$DUO_XCODE_DIR" \
+  xcrun agent skills export --output-dir "$HOME/Desktop/xcode-skills"
+```
+
+This export command was verified with the build above. `DEVELOPER_DIR` applies only to each command; it does not change global Xcode selection. Use a destination that does not already exist and preserve earlier exports when refreshing. If another build behaves differently, inspect `xcrun agent skills export --help` using the same `DEVELOPER_DIR`.
+
+**Exporting creates files; it does not install or activate them in your agent.** Inspect the exported `SKILL.md` files, then use your agent's skill installer to install only the folders relevant to your work, including their `references/` directories. Choose project or personal scope deliberately and back up any existing skill before replacing it. Apple's files are optional, are not redistributed in this repository, and retain their own terms. Exporting `device-interaction` does not supply the Xcode tools it expects.
+
+For example, run the Skills CLI from your app repository to inspect the export and install two selected skills for Codex in that project:
+
+```sh
+npx skills add "$HOME/Desktop/xcode-skills" --list
+npx skills add "$HOME/Desktop/xcode-skills" \
+  --skill app-resizability swiftui-whats-new-27 --agent codex
+```
+
+Review the installer's destinations and any replacement warnings before confirming. Omit skills you do not need; use another agent's identifier if appropriate.
+
+After installing the selected skills, a focused Codex prompt could be:
+
+```text
+$iphone-duo $app-resizability Improve this app's reader-and-notes screen
+for Duo. Check its local geometry, safe areas, and state continuity.
+Keep changes scoped to this feature and preserve the minimum OS target.
+Verify relevant claims against current Apple documentation and the SDK,
+then report build, simulator, and remaining hardware checks separately.
+```
+
+Select additional SwiftUI or device-interaction guidance only when the task needs it. Use your agent's equivalent skill-selection syntax where necessary.
+
 ## Use it
 
 Open your app project and try:

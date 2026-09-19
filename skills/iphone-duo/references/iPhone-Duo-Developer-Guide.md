@@ -8,6 +8,8 @@ Start with sections 1–4 for the design model, then use the API sections that m
 
 **Skill bundle:** Portable copy of the guide researched on 19 September 2026. Original synthesis and historical validation are preserved; companion notes and Swift probes are bundled. Follow the linked official Apple sources and reverify relevant APIs and beta claims before implementation.
 
+**Follow-up audit:** A separate review of Xcode 27.1's exported skills on 19 September 2026 added focused configuration, inset, corner-clearance, and compiler-migration guidance. Its evidence is distinguished from the original probes in section 11; [working with Xcode skills](working-with-xcode-skills.md) explains how to use the complementary material.
+
 ## Contents
 
 1. [The essential model](#1-the-essential-model)
@@ -62,6 +64,12 @@ Build with the Duo-capable Xcode 27.1 SDK to use the new APIs and validate Duo b
 
 The overview says apps built with Xcode 26 or earlier don't extend under the status bar and camera on Duo. Rebuilding can therefore reveal assumptions hidden by the old presentation. Rebuilding is a starting point, not proof of a good layout. [Preparation overview](https://developer.apple.com/documentation/technologyoverviews/preparing-your-app-for-iphone-duo), [Prepare your app, compatibility chapter](https://developer.apple.com/videos/play/tech-talks/111461/?time=30)
 
+### Configuration preflight
+
+Inspect the built app's `Info.plist` and relevant generated build settings, including launch-screen configuration, scene lifecycle, supported orientations, and full-screen compatibility keys. TN3208 says uploads built with the iOS 27 SDK or later need at least one launch-screen configuration key: `UILaunchStoryboardName`, `UILaunchStoryboards`, `UILaunchScreen`, or `UILaunchScreens`. This is a documented submission requirement; the research did not attempt an upload. An app with a valid existing launch screen needs no replacement. [TN3208: Launch-screen requirements](https://developer.apple.com/documentation/technotes/tn3208-preparing-your-apps-launch-screen-to-meet-app-store-requirements)
+
+Check scene adoption and the intended resizing behavior separately. Section 8 covers the scene-lifecycle requirement and TN3192's conditions for discrete resizing with `UIRequiresFullScreen`; do not interpret that compatibility key as a promise of fixed bounds.
+
 ### API availability map
 
 Versions below refer to iOS/iPadOS API introduction, not a guarantee that every device provides the associated hardware capability. Catalyst requires separate attention in this beta.
@@ -79,6 +87,7 @@ Versions below refer to iOS/iPadOS API introduction, not a guarantee that every 
 | Explicit overflow content | `ToolbarOverflowMenu` | `additionalOverflowItems` | SwiftUI 27.0; UIKit 16.0 |
 | Sheet placement | `presentationPlacement` | `UISheetPresentationController.preferredPlacement` | 27.0 |
 | Background extension | `backgroundExtensionEffect` | `UIBackgroundExtensionView` | 26.0 |
+| Corner-adapted content clearance | — | `layoutGuide(for:)`, `directionalEdgeInsets(for:)` with `.safeArea(cornerAdaptation:)` | 26.0 |
 | Camera direction | — | `AVCaptureDeviceDirectionCoordinator`, direction map/descriptors in AVKit | 27.1 |
 | Camera capture accessory | `CameraCaptureAccessory` | `UISceneAccessory.cameraCapture(...)` | 27.1 |
 | General scene-accessory infrastructure | `sceneAccessory` | Scene-accessory infrastructure | 27.0 |
@@ -106,6 +115,16 @@ Keep important content and actions within applicable safe areas and margins. Bac
 For imagery that should visually continue under a sidebar or vertical bar, use `backgroundExtensionEffect()` or `UIBackgroundExtensionView`. These extend background appearance while protecting real content; they are not blanket permission for controls to ignore safe areas. SwiftUI's effect clips its source and creates blurred, mirrored extensions; use it selectively for visual clarity and performance. [SwiftUI effect](https://developer.apple.com/documentation/swiftui/view/backgroundextensioneffect()), [UIKit extension view](https://developer.apple.com/documentation/uikit/uibackgroundextensionview)
 
 For custom surfaces near curved container edges, use `ConcentricRectangle` or `UICornerConfiguration` instead of copying a fixed screen corner radius. Both date to iOS 26 and can calculate corner treatment independently, which is useful for Duo's geometry. In SwiftUI custom containers, supply an appropriate `containerShape` so concentricity can resolve. [ConcentricRectangle](https://developer.apple.com/documentation/swiftui/concentricrectangle), [UICornerConfiguration](https://developer.apple.com/documentation/uikit/uicornerconfiguration-swift.struct)
+
+Rounded surface shapes and content clearance solve different problems. In UIKit, rectangular safe-area insets alone can leave content exposed to curved corners. Where that matters, iOS 26 provides `view.layoutGuide(for: .safeArea(cornerAdaptation: .horizontal))` for constraints and `view.directionalEdgeInsets(for: .safeArea(cornerAdaptation: .horizontal))` for manual layout. Use the region on the view whose content needs clearance, and preserve the returned leading/trailing semantics. Guard these APIs when supporting older OS versions. [Corner-adapted safe area](https://developer.apple.com/documentation/uikit/uiview/layoutregion/safearea(corneradaptation:)), [Layout guide](https://developer.apple.com/documentation/uikit/uiview/layoutguide(for:)), [Directional insets](https://developer.apple.com/documentation/uikit/uiview/directionaledgeinsets(for:))
+
+### Reactive UIKit insets
+
+Insets can change while bounds stay the same, for example when system bars change. Read them from the view being laid out: a sheet, split column, and its window can each have different insets. Prefer constraints to the appropriate layout guide. For manual layout, read current values during layout rather than preserving a one-time setup value. Use `safeAreaInsetsDidChange()` or `viewSafeAreaInsetsDidChange()` to invalidate dependent layout, then let the next pass use current geometry. Invalidate constraints with `setNeedsUpdateConstraints()` when that is where the dependency lives; do not assume constrained child frames have already updated inside the notification callback. [View callback](https://developer.apple.com/documentation/uikit/uiview/safeareainsetsdidchange()), [Controller callback](https://developer.apple.com/documentation/uikit/uiviewcontroller/viewsafeareainsetsdidchange())
+
+Set `additionalSafeAreaInsets` only to the extra space needed by app-owned chrome. Adding the existing safe area into that value counts it twice. Likewise, when a scroll view's inset-adjustment policy includes the safe area in `adjustedContentInset`, do not add it again. Preserve deliberate edge-to-edge layouts and review the adjustment policy before changing it. [Additional insets](https://developer.apple.com/documentation/uikit/uiviewcontroller/additionalsafeareainsets), [Adjusted scroll insets](https://developer.apple.com/documentation/uikit/uiscrollview/adjustedcontentinset)
+
+For keyboard avoidance expressed through constraints, prefer the local view's `keyboardLayoutGuide` over storing keyboard notification frames in screen coordinates. Keep notifications when needed for separate behavior, such as revealing an edited field. [Keyboard layout guide](https://developer.apple.com/documentation/uikit/uiview/keyboardlayoutguide)
 
 ### Continuity and responsiveness — engineering guidance
 
@@ -395,6 +414,8 @@ When closing from Split View, the system chooses which app continues on the oute
 
 Do not use orientation lock or `UIRequiresFullScreen` as a Duo resizing opt-out. The outer and inner displays have different orientation/compatibility behavior. Even games using compatibility handling must survive display transitions and new bounds. WWDC26 describes updated discrete-resizing behavior for games; the older property-list page primarily describes iPad behavior. Keep ordinary apps fully adaptive and treat compatibility modes as separately tested exceptions. [Preparation talk](https://developer.apple.com/videos/play/tech-talks/111461/?time=166), [Current UIKit adaptivity talk](https://developer.apple.com/videos/play/wwdc2026/278/), [Property-list reference](https://developer.apple.com/documentation/bundleresources/information-property-list/uirequiresfullscreen)
 
+TN3192 specifies the current condition more precisely: on iOS/iPadOS 27, apps built with SDK 27 or later and `UIRequiresFullScreen = YES` use discrete resizing unless `UIRequiresFullScreenIgnoredStartingWithVersion` selects version 27 or earlier. During a discrete resize, scene size changes when the drag finishes. This differs from continuous resizing and still requires the app to handle new scene bounds. Review the key and any version-specific fallback deliberately; do not assume the system simply ignores it. [TN3192: Full-screen compatibility migration](https://developer.apple.com/documentation/technotes/tn3192-migrating-your-app-from-the-deprecated-uirequiresfullscreen-key)
+
 ### Adjacent benefit: iPhone Mirroring
 
 The same resize work benefits mirrored iPhone apps and iPhone apps on iPad. Also test indirect input: standard pinch/rotation/pan recognizers, appropriate `allowedScrollTypesMask`, and custom sheet dismissal. Review `UIApplicationSupportsIndirectInputEvents` if it explicitly opts out. Biometrics in Mirroring need a supported companion-device policy where appropriate to the app's authentication design. This is related platform work, not a Duo-only requirement. [TN3210: iPhone Mirroring](https://developer.apple.com/documentation/technotes/tn3210-optimizing-your-app-for-iphone-mirroring)
@@ -453,9 +474,11 @@ Normal camera/microphone and media-library permission requirements remain. Test 
 
 This is a recommended engineering sequence for each app. It is not a claim that the app has already been audited.
 
+When a toolchain update introduces SwiftUI state-initialization or builder errors, consult the conditional `@State` and `ContentBuilder` diagnostics in [working with Xcode skills](working-with-xcode-skills.md). These are SDK migration issues, independent of Duo hardware. Build the actual app: the follow-up audit reproduced a state-initializer failure during SIL generation even though `-typecheck` passed. Do not apply unrelated compiler migrations merely to complete a Duo task.
+
 ### Phase A — establish adaptive behavior
 
-1. Identify the build SDK, deployment targets, platforms, scene lifecycle, and custom rendering/camera components.
+1. Identify the build SDK, deployment targets, platforms, scene lifecycle, and custom rendering/camera components; check the built configuration described in section 2.
 2. Build with the Duo-capable SDK and run the current app before rewriting UI. Record failures with screen, pose, orientation, size, and interaction state.
 3. Audit global screen measurements, idiom/orientation layout checks, fixed phone widths, symmetric-safe-area assumptions, and root-view swaps.
 4. Repair local sizing, constraints, scrollability, keyboard avoidance, and state ownership. Verify sheets/popovers, onboarding, authentication, paywalls, empty/error states, and settings as well as the main screen.
@@ -508,7 +531,7 @@ These are review candidates, not a list to replace mechanically. Some orientatio
 
 ## 11. Validation matrix
 
-### What this research actually validated
+### What the original research actually validated
 
 | Check | Result | Limit |
 | --- | --- | --- |
@@ -534,6 +557,10 @@ DEVELOPER_DIR="$DUO_XCODE_DIR" xcrun --sdk iphonesimulator swiftc \
 ```
 
 For an app, build and test the actual scheme, entitlements, persistence and launch path. Do not remove signing/entitlements merely to make a simulator build pass if the app depends on those capabilities.
+
+### Separate Xcode-skills audit — 19 September 2026
+
+The follow-up audit inspected Xcode 27.1 (27A9269), checked relevant current Apple references, and typechecked a guarded corner-region/vertical-edge probe against iPhoneSimulator27.1 with Swift 6, complete strict concurrency, warnings as errors, and an iOS 26 deployment target. Targeted SwiftUI probes also reproduced state-initializer and overlay-overload failures and confirmed corresponding fixes; one failure required SIL generation to surface. These checks supplement the original evidence above and do not mean its probes were rerun. No app runtime, physical Duo behavior, or App Store submission was tested. See [working with Xcode skills](working-with-xcode-skills.md) for the bounded migration guidance and source discrepancies.
 
 ### Required app scenarios — not yet executed
 
